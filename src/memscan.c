@@ -69,6 +69,7 @@ GPWNAPI sigscan_handle *sigscan_setup(const char *signature_str,
     }
     return handle;
 }
+
 GPWNAPI sigscan_handle *sigscan_setup_raw(byte *sigbyte, byte *mask,
     size_t sig_size, const char *libname, int flags) {
     sigscan_handle *handle = malloc(sizeof(sigscan_handle));
@@ -114,6 +115,7 @@ GPWNAPI sigscan_handle *sigscan_setup_raw(byte *sigbyte, byte *mask,
 
     return handle;
 }
+
 GPWNAPI void sigscan_cleanup(sigscan_handle *handle) {
     if(handle->libname)
         free(handle->libname);
@@ -202,7 +204,6 @@ GPWNAPI void *get_sigscan_result(sigscan_handle *handle) {
 
 
 static inline uint8_t hextonib(char hex) {
-    //hex &= 0xf;
     if(hex >= '0' && hex <= '9')
         return hex - '0';
     else if(hex >= 'a' && hex <= 'f')
@@ -211,12 +212,12 @@ static inline uint8_t hextonib(char hex) {
         return hex - 'A' + 0xa;
     return 0;
 }
+
 GPWN_BKND size_t parse_sigpattern(const char *in_pattern,
     byte **sigbyte, byte **mask) {
     *sigbyte = malloc((strlen(in_pattern)/2)+1);
     *mask = malloc((strlen(in_pattern)/2)+1);
     if(!*sigbyte || !*mask) {
-        // printf("malloc failed!");
         return -1;
     }
     memset(*sigbyte, 0, (strlen(in_pattern)/2)+1);
@@ -242,7 +243,6 @@ GPWN_BKND size_t parse_sigpattern(const char *in_pattern,
             continue;
         }
         else {
-            // printf("not a good string!\n");
             free(*sigbyte);
             free(*mask);
             return -1;
@@ -253,6 +253,7 @@ GPWN_BKND size_t parse_sigpattern(const char *in_pattern,
     }
     return head;
 }
+
 /*
 // 1 byte simple precision scanner
 GPWN_BKND size_t search_sigpattern(byte *data, size_t data_len,
@@ -269,6 +270,7 @@ GPWN_BKND size_t search_sigpattern(byte *data, size_t data_len,
     return -1;
 }
 */
+
 // 4 byte aligned scanner (ARM)
 GPWN_BKND size_t search_sigpattern4(uint32_t *data, size_t data_len,
     uint32_t *sigbyte, uint32_t *mask, size_t sig_len) {
@@ -285,39 +287,47 @@ GPWN_BKND size_t search_sigpattern4(uint32_t *data, size_t data_len,
     }
     return -1;
 }
-// 1 byte hybrid precision scanner
+
+// 1 byte hybrid precision scanner (corrected)
 GPWN_BKND size_t search_sigpattern_hybrid(byte *data, size_t data_len,
     byte *sigbyte, byte *mask, size_t sig_len) {
+
     for(size_t i = 0; i <= (data_len - sig_len); i++) {
         for(size_t j = 0; j < sig_len; j++) {
-            if((sig_len - j) >= 8) {
+
 #ifdef __LP64__
+            if((sig_len - j) >= 8) {
                 // 8 byte alignment
                 if(
                     (*(uint64_t*)((size_t)data + i + j) & *((uint64_t*)((size_t)mask + j)))
                     != (*(uint64_t*)((size_t)sigbyte + j) & *((uint64_t*)((size_t)mask + j)))
                 )
                     break;
-                j+=7;
-            } else
+                j += 7;
+                continue;
+            }
 #endif
+
             if((sig_len - j) >= 4) {
                 // 4 byte alignment
                 if(
                     (*(uint32_t*)((size_t)data + i + j) & *((uint32_t*)((size_t)mask + j)))
-                    != (*(uint32_t*)((size_t)sigbyte + j) & *((int32_t*)((size_t)mask + j)))
+                    != (*(uint32_t*)((size_t)sigbyte + j) & *((uint32_t*)((size_t)mask + j)))
                 )
                     break;
-                j+=3;
-            } else {
-                if((data[i+j] & mask[j]) != (sigbyte[j] & mask[j]))
-                    break;
+                j += 3;
+                continue;
             }
-            if(j+1 == sig_len) {
+
+            // 1 byte fallback
+            if((data[i+j] & mask[j]) != (sigbyte[j] & mask[j]))
+                break;
+
+            // matched entire pattern
+            if(j + 1 == sig_len)
                 return i;
-            }
         }
     }
+
     return -1;
 }
-
