@@ -32,9 +32,7 @@
 #include "proc.h"
 #include "inlinehook.h"
 
-#if defined(__x86_64__) || defined(__amd64__) || defined(__i386__) || defined(__x86__)
-#include "hook86.h"
-#elif defined(__arm__) || defined (__aarch64__)
+#if defined(__arm__) || defined (__aarch64__)
 #include "armhook.h"
 #endif
 
