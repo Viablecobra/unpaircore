@@ -32,9 +32,7 @@
 #include "proc.h"
 #include "inlinehook.h"
 
-#if defined(__arm__) || defined (__aarch64__)
 #include "armhook.h"
-#endif
 
 #ifdef __aarch64__
 #define AARCH64_LEGACY_HOOKBYTES_LEN 20
