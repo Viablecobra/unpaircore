@@ -320,3 +320,4 @@ GPWN_BKND size_t search_sigpattern_hybrid(byte *data, size_t data_len,
     }
     return -1;
 }
+}
