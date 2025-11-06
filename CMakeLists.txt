@@ -16,6 +16,3 @@ target_link_libraries(pairipcore
         android
         log
 )
-
-# Only build for ARM architectures (remove x86)
-set(CMAKE_ANDROID_ARCH_ABI arm64-v8a armeabi-v7a)
